@@ -29,3 +29,18 @@ print(cuisine_count)
 sorted_city = city_count.sort_values(ascending=False)
 print("Cities sorted by number of orders:")
 print(sorted_city)
+
+# Calculate total food sales for each city
+city_revenue = df.groupby("city")["item_total"].sum()
+print("Total food sales by city:")
+print(city_revenue)
+
+# Calculate average food order value for each city
+city_revenue_mean = df.groupby("city")["item_total"].mean()
+print("Average food order value by city:")
+print(city_revenue_mean)
+
+# Sort cities by total food sales, highest first
+sorted_city_revenue = city_revenue.sort_values(ascending=False)
+print("Cities sorted by total food sales:")
+print(sorted_city_revenue)
