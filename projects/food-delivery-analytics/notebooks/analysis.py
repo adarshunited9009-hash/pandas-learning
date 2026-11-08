@@ -1,51 +1,186 @@
 import pandas as pd
 
-# Load the food delivery dataset
+# Load the dataset from the project folder
 df = pd.read_csv("data/food_orders.csv")
 
-# Get a quick look at the dataset
+# -------------------------
+# 1. Explore the dataset
+# -------------------------
+print("First five orders:")
 print(df.head())
+
+print("\nDataset shape:", df.shape)
+print("\nDataset information:")
+df.info()
+
+print("\nNumerical summary:")
 print(df.describe())
 
-# Find high-value and low-value orders
+# -------------------------
+# 2. Order value analysis
+# -------------------------
 high_value_orders = df[df["item_total"] > 500]
-print("Total number of high-value orders:", high_value_orders.shape[0])
-
 low_value_orders = df[df["item_total"] < 200]
-print("Total number of low-value orders:", low_value_orders.shape[0])
 
-# Count orders by city and cuisine
-city_count = df["city"].value_counts()
-print("Number of orders from each city:")
-print(city_count)
+print("\nHigh-value orders:", high_value_orders.shape[0])
+print("Low-value orders:", low_value_orders.shape[0])
 
-cuisine_count = df["cuisine"].value_counts()
-print("Number of orders for each cuisine:")
-print(cuisine_count)
+print("\nAverage order value:", df["item_total"].mean())
+print("Total food sales:", df["item_total"].sum())
 
-# Sort cities by order count
-sorted_city = city_count.sort_values(ascending=False)
-print("Cities sorted by number of orders:")
-print(sorted_city)
+# -------------------------
+# 3. City and cuisine analysis
+# -------------------------
+city_order_count = df["city"].value_counts()
+cuisine_order_count = df["cuisine"].value_counts()
 
-# Calculate total food sales and average order value by city
-city_revenue = df.groupby("city")["item_total"].sum()
-city_revenue_mean = df.groupby("city")["item_total"].mean()
+print("\nOrders by city:")
+print(city_order_count)
 
-print("Total food sales by city:")
-print(city_revenue)
+print("\nOrders by cuisine:")
+print(cuisine_order_count)
 
-print("Average food order value by city:")
-print(city_revenue_mean)
-
-# Sort cities by total food sales
-sorted_city_revenue = city_revenue.sort_values(ascending=False)
-print("Cities sorted by total food sales:")
-print(sorted_city_revenue)
-
-# Calculate multiple statistics for each city
-city_analysis = df.groupby("city")["item_total"].agg(
+city_sales = df.groupby("city")["item_total"].agg(
     ["sum", "mean", "max", "min", "count"]
+).sort_values("sum", ascending=False)
+
+print("\nCity-wise sales summary:")
+print(city_sales)
+
+# -------------------------
+# 4. Restaurant analysis
+# -------------------------
+restaurant_revenue = (
+    df.groupby("restaurant")["item_total"]
+    .sum()
+    .sort_values(ascending=False)
 )
-print("City-wise sales summary:")
-print(city_analysis)
+
+restaurant_order_count = (
+    df.groupby("restaurant")
+    .size()
+    .sort_values(ascending=False)
+)
+
+restaurant_delivery_time = (
+    df[df["order_status"] == "Delivered"]
+    .groupby("restaurant")["delivery_time"]
+    .mean()
+    .sort_values()
+)
+
+print("\nTop five restaurants by food sales:")
+print(restaurant_revenue.head(5))
+
+print("\nTop five restaurants by order count:")
+print(restaurant_order_count.head(5))
+
+print("\nFive restaurants with the lowest average delivery time:")
+print(restaurant_delivery_time.head(5))
+
+# -------------------------
+# 5. Cancellation analysis
+# -------------------------
+cancelled_orders = df[df["order_status"] == "Cancelled"]
+delivered_orders = df[df["order_status"] == "Delivered"]
+
+total_orders = df.shape[0]
+cancelled_count = cancelled_orders.shape[0]
+cancellation_rate = (cancelled_count / total_orders) * 100
+
+print("\nCancelled orders:", cancelled_count)
+print("Cancellation rate: {:.2f}%".format(cancellation_rate))
+
+city_cancellations = cancelled_orders.groupby("city").size()
+city_total_orders = df.groupby("city").size()
+city_cancellation_rate = (
+    city_cancellations.div(city_total_orders).mul(100).fillna(0)
+).sort_values(ascending=False)
+
+print("\nCancelled orders by city:")
+print(city_cancellations.sort_values(ascending=False))
+
+print("\nCancellation rate by city:")
+print(city_cancellation_rate)
+
+# -------------------------
+# 6. Payment method analysis
+# -------------------------
+payment_count = df["payment_method"].value_counts()
+payment_percentage = (payment_count / total_orders) * 100
+
+print("\nOrders by payment method:")
+print(payment_count)
+
+print("\nPayment method percentages:")
+print(payment_percentage.round(2))
+
+print("Most popular payment method:", payment_count.idxmax())
+
+# -------------------------
+# 7. Discount analysis
+# -------------------------
+discounted_orders = df[df["discount"] > 0]
+non_discounted_orders = df[df["discount"] == 0]
+
+print("\nTotal discount given:", df["discount"].sum())
+print(
+    "Average discounted order value:",
+    round(discounted_orders["item_total"].mean(), 2)
+)
+print(
+    "Average non-discounted order value:",
+    round(non_discounted_orders["item_total"].mean(), 2)
+)
+
+df["final_amount"] = df["item_total"] - df["discount"]
+
+# -------------------------
+# 8. Customer rating analysis
+# -------------------------
+restaurant_rating = (
+    df.groupby("restaurant")["rating"]
+    .mean()
+    .sort_values(ascending=False)
+)
+
+print("\nAverage customer rating:", df["rating"].mean())
+print("Restaurants ranked by average rating:")
+print(restaurant_rating)
+print("Highest-rated restaurant:", restaurant_rating.idxmax())
+print("Lowest-rated restaurant:", restaurant_rating.idxmin())
+
+# -------------------------
+# 9. Delivery time analysis
+# -------------------------
+print(
+    "\nAverage delivery time:",
+    delivered_orders["delivery_time"].mean()
+)
+print("Fastest delivery:", delivered_orders["delivery_time"].min())
+print("Longest delivery:", delivered_orders["delivery_time"].max())
+
+# -------------------------
+# 10. Overall business summary
+# -------------------------
+print("\nOverall business summary")
+print("Total orders:", total_orders)
+print("Total food sales:", round(df["item_total"].sum(), 2))
+print("Average order value:", round(df["item_total"].mean(), 2))
+print("Total discounts:", round(df["discount"].sum(), 2))
+print("Total delivery fees:", round(df["delivery_fee"].sum(), 2))
+print("Delivered orders:", delivered_orders.shape[0])
+print("Cancelled orders:", cancelled_count)
+
+# -------------------------
+# 11. Data quality checks
+# -------------------------
+print("\nMissing values in each column:")
+print(df.drop(columns=["final_amount"]).isnull().sum())
+
+print("\nMissing delivery times by order status:")
+print(df.groupby("order_status")["delivery_time"].apply(
+    lambda values: values.isna().sum()
+))
+
+print("\nDuplicate rows:", df.drop(columns=["final_amount"]).duplicated().sum())
